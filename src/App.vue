@@ -1,7 +1,7 @@
 <script setup>
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { onMounted, watch } from "vue";
+import { onMounted } from "vue";
 import PartOption from "./components/PartOption.vue";
 import ColorSqure from "./components/ColorSqure.vue";
 import * as THREE from "three";
@@ -128,10 +128,9 @@ function addLights() {
   scene.add(dirLight);
 }
 
-watch(lightColor, (_, newColor) => {
-  console.log(newColor);
-  dirLight.color.set(newColor);
-});
+function onLightColorChange() {
+  dirLight.color.set(lightColor.value);
+}
 
 // Floor
 function initFloor() {
@@ -239,7 +238,7 @@ function getStyle(color) {
 }
 
 function selectColor(color) {
-  let new_mtl;
+  let newMtl;
   if (color.texture) {
     const txt = new THREE.TextureLoader().load(color.texture);
 
@@ -247,17 +246,17 @@ function selectColor(color) {
     txt.wrapS = THREE.RepeatWrapping;
     txt.wrapT = THREE.RepeatWrapping;
 
-    new_mtl = new THREE.MeshPhongMaterial({
+    newMtl = new THREE.MeshPhongMaterial({
       map: txt,
       shininess: color.shininess ? color.shininess : 10,
     });
   } else {
-    new_mtl = new THREE.MeshPhongMaterial({
+    newMtl = new THREE.MeshPhongMaterial({
       color: parseInt("0x" + color.color),
       shininess: color.shininess ? color.shininess : 10,
     });
   }
-  setMaterial(theModel, activePart, new_mtl);
+  setMaterial(theModel, activePart, newMtl);
 }
 
 function setMaterial(parent, type, mtl) {
@@ -283,7 +282,7 @@ function setMaterial(parent, type, mtl) {
   </div>
   <div class="color-block">
     <span class="demonstration">调节灯光颜色</span>
-    <el-color-picker v-model="lightColor" />
+    <el-color-picker v-model="lightColor" @change="onLightColorChange" />
   </div>
   <div class="controls">
     <el-scrollbar>
