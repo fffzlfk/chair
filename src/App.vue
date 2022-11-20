@@ -1,21 +1,29 @@
 <script setup>
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
 import PartOption from "./components/PartOption.vue";
 import ColorSqure from "./components/ColorSqure.vue";
 import * as THREE from "three";
 import colors from "./composables/colors.js";
+import { ref } from "vue";
+import floorTxt from "/img/floor_.jpg";
 
-const MODEL_PATH = "/models/chair.glb";
-
-const BACKGROUND_COLOR = 0xf1f1f1;
+const ModelPath = "/models/chair.glb";
 
 const scene = new THREE.Scene();
-// Set background
-function setScene() {
-  scene.background = new THREE.Color(BACKGROUND_COLOR);
-  scene.fog = new THREE.Fog(BACKGROUND_COLOR, 20, 100);
+// init scence
+function initScene() {
+  const loader = new THREE.CubeTextureLoader();
+  const texture = loader.load([
+    "/img/pos-x.jpg",
+    "/img/neg-x.jpg",
+    "/img/pos-y.jpg",
+    "/img/neg-y.jpg",
+    "/img/pos-z.jpg",
+    "/img/neg-z.jpg",
+  ]);
+  scene.background = texture;
 }
 
 const camera = new THREE.PerspectiveCamera(
@@ -25,39 +33,30 @@ const camera = new THREE.PerspectiveCamera(
   1000
 );
 
-// Set camera
-function setCamera() {
-  camera.position.z = 5;
-  camera.position.x = 0;
+// init camera
+function initCamera() {
+  camera.position.set(0, 7, 5);
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 }
 
 const el = document.getElementById("el");
 const renderer = new THREE.WebGLRenderer({ canvas: el });
-function setRenderer() {
+// init Renderer
+function initRenderer() {
   renderer.shadowMap.enabled = true;
   renderer.setPixelRatio(window.devicePixelRatio);
 }
-
-const INITIAL_MTL = new THREE.MeshPhongMaterial({
-  color: 0xf1f1f1,
-  shininess: 10,
-});
-
-const INITIAL_MAP = [
-  { childID: "back", mtl: INITIAL_MTL },
-  { childID: "base", mtl: INITIAL_MTL },
-  { childID: "cushions", mtl: INITIAL_MTL },
-  { childID: "legs", mtl: INITIAL_MTL },
-  { childID: "supports", mtl: INITIAL_MTL },
-];
 
 let theModel;
 let loaded = false;
 const loader = new GLTFLoader();
 
+const parts = ["legs", "cushions", "base", "supports", "back"];
+let loading = ref(0);
+
 function load() {
   loader.load(
-    MODEL_PATH,
+    ModelPath,
     function (gltf) {
       theModel = gltf.scene;
 
@@ -69,30 +68,36 @@ function load() {
       });
 
       // Set the models initial scale
-      theModel.scale.set(2, 2, 2);
+      theModel.scale.set(3, 3, 3);
       theModel.rotation.y = Math.PI;
 
       // Offset the y position a bit
-      theModel.position.y = -1;
+      theModel.position.set(0, -2, 0);
+
+      const initialMtl = new THREE.MeshPhongMaterial({
+        color: 0xf1f1f1,
+        shininess: 10,
+      });
 
       // Set initial textures
-      for (let object of INITIAL_MAP) {
-        initColor(theModel, object.childID, object.mtl);
+      for (const part of parts) {
+        initColor(theModel, part, initialMtl);
       }
 
       // Add the model to the scene
       scene.add(theModel);
-
-      // Remove the loader
     },
-    undefined,
+    function (xhr) {
+      loading.value += (xhr.loaded / xhr.total) * 100;
+      console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+    },
     function (error) {
       console.error(error);
     }
   );
 }
 
-// Function - Add the textures to the models
+// Add the textures to the models
 function initColor(parent, type, mtl) {
   parent.traverse((o) => {
     if (o.isMesh) {
@@ -105,15 +110,17 @@ function initColor(parent, type, mtl) {
 }
 
 // Add lights
+const lightColor = ref("#ffffff");
+// 平行光
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.54);
 function addLights() {
-  // 半球光
-  const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.4);
+  // 半球光，用来提亮场景
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.4);
   hemiLight.position.set(0, 50, 0);
   // Add hemisphere light to scene
   scene.add(hemiLight);
 
-  // 平行光
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.54);
+  dirLight.color.set(lightColor.value);
   dirLight.position.set(-8, 12, 8);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
@@ -121,23 +128,33 @@ function addLights() {
   scene.add(dirLight);
 }
 
-// Floor
-const floorGeometry = new THREE.PlaneGeometry(5000, 5000, 1, 1);
-const floorMaterial = new THREE.MeshPhongMaterial({
-  color: 0xfdfdfd,
-  shininess: 0,
+watch(lightColor, (_, newColor) => {
+  console.log(newColor);
+  dirLight.color.set(newColor);
 });
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-function setFloor() {
-  floor.rotation.x = -0.5 * Math.PI;
+
+// Floor
+function initFloor() {
+  const floorGeometry = new THREE.PlaneGeometry(5000, 5000, 1, 1);
+  const txt = new THREE.TextureLoader().load(floorTxt);
+  txt.repeat.set(800, 800, 800);
+  txt.wrapS = THREE.RepeatWrapping;
+  txt.wrapT = THREE.RepeatWrapping;
+  const floorMaterial = new THREE.MeshPhongMaterial({
+    // color: 0xfdfdfd,
+    map: txt,
+    shininess: 10,
+  });
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  floor.rotation.x = -0.5 * Math.PI; // 绕x轴旋转90度
   floor.receiveShadow = true;
-  floor.position.y = -1;
+  floor.position.y = -2; // 和模型位置一致
   scene.add(floor);
 }
 
 // Add controls
 const controls = new OrbitControls(camera, renderer.domElement);
-function setControls() {
+function initControls() {
   controls.maxPolarAngle = Math.PI / 2;
   controls.minPolarAngle = Math.PI / 3;
   controls.enableDamping = true;
@@ -150,14 +167,16 @@ function setControls() {
 function animate() {
   controls.update();
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  requestAnimationFrame(animate); // 让浏览器定时调用antimate()进行刷新
 
+  // 窗口大小调整时，更新canvas画布大小
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement;
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
   }
 
+  // 加载模型后旋转
   if (theModel != null && loaded == false) {
     initialRotation();
   }
@@ -190,22 +209,21 @@ function initialRotation() {
 }
 
 function init() {
-  setScene();
-  setCamera();
-  setRenderer();
+  initScene();
+  initCamera();
+  initRenderer();
   document.body.appendChild(renderer.domElement);
   load();
   animate();
   addLights();
-  setFloor();
-  setControls();
+  initFloor();
+  initControls();
 }
 
 onMounted(() => {
   init();
 });
 
-const parts = ["legs", "cushions", "base", "supports", "back"];
 let activePart = "legs";
 
 function selectPart(part) {
@@ -259,9 +277,13 @@ function setMaterial(parent, type, mtl) {
       v-for="part in parts"
       :key="part"
       :dataOption="part"
-      :imgUrl="`https://s3-us-west-2.amazonaws.com/s.cdpn.io/1376484/${part}.svg`"
+      :imgUrl="`/img/parts/${part}.svg`"
       @click="selectPart(part)"
     />
+  </div>
+  <div class="color-block">
+    <span class="demonstration">调节灯光颜色</span>
+    <el-color-picker v-model="lightColor" />
   </div>
   <div class="controls">
     <el-scrollbar>
@@ -278,12 +300,19 @@ function setMaterial(parent, type, mtl) {
 </template>
 
 <style scoped>
+.color-block {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+}
+
 .controls {
   position: absolute;
   width: 100%;
-  bottom: 0px;
+  top: 90vh;
   z-index: 1000;
 }
+
 .options {
   position: absolute;
   left: 0;
