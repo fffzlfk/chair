@@ -276,7 +276,7 @@ function setMaterial(parent, type, mtl) {
       v-for="part in parts"
       :key="part"
       :dataOption="part"
-      :imgUrl="`/img/parts/${part}.svg`"
+      :imgUrl="`/chair/img/parts/${part}.svg`"
       @click="selectPart(part)"
     />
   </div>
