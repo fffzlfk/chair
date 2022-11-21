@@ -7,7 +7,7 @@ import ColorSqure from "./components/ColorSqure.vue";
 import * as THREE from "three";
 import colors from "./composables/colors.js";
 import { ref } from "vue";
-import floorTxt from "/chair/img/floor_.jpg";
+import floorTxt from "/img/floor_.jpg";
 
 const ModelPath = "/chair/models/chair.glb";
 
