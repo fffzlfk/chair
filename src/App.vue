@@ -7,21 +7,21 @@ import ColorSqure from "./components/ColorSqure.vue";
 import * as THREE from "three";
 import colors from "./composables/colors.js";
 import { ref } from "vue";
-import floorTxt from "/img/floor_.jpg";
+import floorTxt from "/chair/img/floor_.jpg";
 
-const ModelPath = "/models/chair.glb";
+const ModelPath = "/chair/models/chair.glb";
 
 const scene = new THREE.Scene();
 // init scence
 function initScene() {
   const loader = new THREE.CubeTextureLoader();
   const texture = loader.load([
-    "/img/pos-x.jpg",
-    "/img/neg-x.jpg",
-    "/img/pos-y.jpg",
-    "/img/neg-y.jpg",
-    "/img/pos-z.jpg",
-    "/img/neg-z.jpg",
+    "/chair/img/pos-x.jpg",
+    "/chair/img/neg-x.jpg",
+    "/chair/img/pos-y.jpg",
+    "/chair/img/neg-y.jpg",
+    "/chair/img/pos-z.jpg",
+    "/chair/img/neg-z.jpg",
   ]);
   scene.background = texture;
 }

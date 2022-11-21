@@ -17,9 +17,6 @@ jobs:
           npm install
           npm run build
           cp dist/index.html dist/404.html
-          mkdir dist/chair
-          mv dist/img dist/chair/img
-          mv dist/models dist/chair/models
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
